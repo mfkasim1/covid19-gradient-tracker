@@ -1,17 +1,22 @@
+from abc import abstractmethod, abstractproperty
 import torch
 import pyro
 from pyro.distributions import Normal, Uniform, Laplace, MultivariateNormal
-import pyro.poutine as poutine
-from pyro.infer import MCMC, NUTS
 import matplotlib.pyplot as plt
 
-class Model1(object):
+class BaseModel(object):
+    @abstractproperty
+    def output_type():
+        pass # "yt", "logyt"
+
+    @abstractmethod
+    def forward(self, t):
+        pass
+
+class Model1(BaseModel):
     def __init__(self, a_bounds=(-2,3),
         b_bounds=(-1,0.5), logs_bounds=(-2,1),
         log_lscale_bounds=(0,3.0)):
-    # def __init__(self, a_bounds=(0,0.01),
-    #     b_bounds=(0.139,0.141), logs_bounds=(-8,-7),
-    #     log_lscale_bounds=(2.0,3.0)):
         """
         This model assumes:
             log(y(t)) ~ Normal(mu(t), sigma)
@@ -22,11 +27,14 @@ class Model1(object):
             log(lscale) ~ Uniform(*log_lscale_bounds)
             a ~ Uniform(*a_bounds)
         """
-
         self.a_bounds = a_bounds
         self.b_bounds = b_bounds
         self.logs_bounds = logs_bounds
         self.log_lscale_bounds = log_lscale_bounds
+
+    @property
+    def output_type(self):
+        return "logyt"
 
     def forward(self, t):
         # t, yt: (n,)
@@ -52,35 +60,6 @@ class Model1(object):
         logysim = pyro.sample("logyt", Normal(mu, torch.exp(log_sigma)))
 
         return logysim
-
-def conditioned_model(model, t, logyt):
-    return poutine.condition(model.forward, data={"logyt": logyt})(t)
-
-def infer(args, model, t, logyt):
-    nuts_kernel = NUTS(conditioned_model, jit_compile=args.jit)
-    mcmc = MCMC(nuts_kernel,
-            num_samples=args.num_samples,
-            warmup_steps=args.warmup_steps,
-            num_chains=args.num_chains)
-    mcmc.run(model, t, logyt)
-    mcmc.summary(prob=0.5)
-
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(description='MCMC')
-    parser.add_argument('--num-samples', type=int, default=1000,
-                        help='number of MCMC samples (default: 1000)')
-    parser.add_argument('--num-chains', type=int, default=1,
-                        help='number of parallel MCMC chains (default: 1)')
-    parser.add_argument('--warmup-steps', type=int, default=1000,
-                        help='number of MCMC samples for warmup (default: 1000)')
-    parser.add_argument('--jit', action='store_true', default=False)
-    args = parser.parse_args()
-
-    t = torch.linspace(0, 10, 11)
-    yt = torch.exp(0.14 * t)
-    model = Model1()
-    infer(args, model, t, torch.log(yt))
 
 if __name__ == "__main__":
     # main()
