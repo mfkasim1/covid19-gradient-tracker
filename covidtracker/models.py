@@ -146,18 +146,27 @@ def main(dtype=torch.float):
     mu = model.simulate_samples(samples).detach().numpy() # (nsamples, n)
     tnp = t.numpy()
 
-    plt.figure(figsize=(12,6))
-    plt.subplot(1,2,1)
+    dltest = DataLoader("id_new_tests")
+    ytest = dltest.ytime
+    ttest = np.arange(ytest.shape[0])
+
+    plt.figure(figsize=(12,4))
+    ncols = 3
+    plt.subplot(1,ncols,1)
     plot_interval(tnp, b, color="C2")
     plt.plot(tnp, tnp*0, "k--")
     plt.ylabel("Faktor eksponensial")
     plt.xlabel("Hari")
     plt.title(dl.ylabel)
-    plt.subplot(1,2,2)
+    plt.subplot(1,ncols,2)
     plt.bar(tnp, yt, color="C0", alpha=0.6)
     plot_interval(tnp, mu, color="C1")
     plt.xlabel("Hari")
     plt.title(dl.ylabel)
+
+    plt.subplot(1,ncols,3)
+    plt.bar(ttest, yt/ytest, color="C0")
+    plt.title(dltest.ylabel)
     plt.show()
 
 if __name__ == "__main__":
