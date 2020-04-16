@@ -1,3 +1,4 @@
+import os
 from abc import abstractmethod, abstractproperty
 import pickle
 import torch
@@ -7,6 +8,7 @@ from pyro.distributions import Normal, Uniform, Laplace, MultivariateNormal
 from pyro.infer import MCMC, NUTS
 import pyro.poutine as poutine
 import matplotlib.pyplot as plt
+from covidtracker.dataloader import DataLoader
 
 class BaseModel(object):
     @abstractproperty
@@ -107,9 +109,10 @@ def plot_interval(t, ysamples, color="C0"): # numpy operation
     plt.fill_between(t, yl1, yu1, color=color, alpha=0.6)
     plt.fill_between(t, yl2, yu2, color=color, alpha=0.3)
 
-def main():
+def main(dtype=torch.float):
     import argparse
     parser = argparse.ArgumentParser(description='MCMC')
+    parser.add_argument('data', type=str)
     parser.add_argument('--nsamples', type=int, default=1000,
                         help='number of MCMC samples (default: 1000)')
     parser.add_argument('--nchains', type=int, default=1,
@@ -117,23 +120,24 @@ def main():
     parser.add_argument('--nwarmups', type=int, default=1000,
                         help='number of MCMC samples for warmup (default: 1000)')
     parser.add_argument('--jit', action='store_true', default=False)
-    parser.add_argument('--saveto', type=str, default=None)
-    parser.add_argument('--loadfrom', type=str, default=None)
+    parser.add_argument('--restart', action='store_true', default=False)
     args = parser.parse_args()
 
-    t = torch.linspace(0, 10, 11)
-    yt = torch.exp(0.14 * t)
+    # load the data
+    dl = DataLoader(args.data)
+    yt = torch.tensor(dl.ytime, dtype=dtype)
+    t = torch.arange(yt.shape[0], dtype=dtype) * 1.0
     model = Model1()
 
-    if args.loadfrom is None:
+    samples_fname = dl.get_fname()
+    if os.path.exists(samples_fname) and not args.restart:
+        with open(samples_fname, "rb") as fb:
+            samples = pickle.load(fb)
+    else:
         mcmc = infer(args, model, t, yt)
         samples = mcmc.get_samples()
-        if args.saveto is not None:
-            with open(args.saveto, "wb") as fb:
-                pickle.dump(samples, fb)
-    else:
-        with open(args.loadfrom, "rb") as fb:
-            samples = pickle.load(fb)
+        with open(samples_fname, "wb") as fb:
+            pickle.dump(samples, fb)
 
     b = samples["b"].detach().numpy() # (nsamples, n)
     mu = model.simulate_samples(samples).detach().numpy() # (nsamples, n)
