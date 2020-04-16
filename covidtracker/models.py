@@ -105,9 +105,12 @@ def plot_interval(t, ysamples, color="C0"): # numpy operation
     yu1 = np.percentile(ysamples, 75., axis=0)
     yl2 = np.percentile(ysamples, 2.5, axis=0)
     yu2 = np.percentile(ysamples, 97.5, axis=0)
-    plt.plot(t, ymedian, color=color)
-    plt.fill_between(t, yl1, yu1, color=color, alpha=0.6)
-    plt.fill_between(t, yl2, yu2, color=color, alpha=0.3)
+    yl3 = np.percentile(ysamples, 0.5, axis=0)
+    yu3 = np.percentile(ysamples, 99.5, axis=0)
+    plt.plot(t, ymedian, color=color, label="Median")
+    plt.fill_between(t, yl1, yu1, color=color, alpha=0.6, label="50% CI")
+    plt.fill_between(t, yl2, yu2, color=color, alpha=0.3, label="95% CI")
+    plt.fill_between(t, yl3, yu3, color=color, alpha=0.15, label="99% CI")
 
 def main(dtype=torch.float):
     import argparse
@@ -156,17 +159,26 @@ def main(dtype=torch.float):
     plot_interval(tnp, b, color="C2")
     plt.plot(tnp, tnp*0, "k--")
     plt.ylabel("Faktor eksponensial")
-    plt.xlabel("Hari")
+    plt.xticks(tnp[::7], dl.tdate[::7], rotation=90)
     plt.title(dl.ylabel)
+    plt.legend()
     plt.subplot(1,ncols,2)
-    plt.bar(tnp, yt, color="C0", alpha=0.6)
+    plt.bar(tnp, yt, color="C1", alpha=0.6)
     plot_interval(tnp, mu, color="C1")
-    plt.xlabel("Hari")
+    plt.xticks(tnp[::7], dl.tdate[::7], rotation=90)
     plt.title(dl.ylabel)
 
-    plt.subplot(1,ncols,3)
-    plt.bar(ttest, yt/ytest, color="C0")
-    plt.title(dltest.ylabel)
+    if ncols == 3:
+        plt.subplot(1,ncols,3)
+        a = 7
+        yy = ytest[:((yt.shape[0]//a)*a)].reshape(-1,a).sum(axis=-1)
+        ty = ttest[:((yt.shape[0]//a)*a)].reshape(-1,a)[:,0]#.sum(axis=-1)
+        plt.bar(ty, yy, width=a-0.5)
+        # plt.bar(ttest, ytest, color="C0")
+        plt.title("Pemeriksaan per minggu")
+        # plot_interval(tnp, mu, color="C1")
+        plt.xticks(ttest[::7], dltest.tdate[::7], rotation=90)
+    plt.tight_layout()
     plt.show()
 
 if __name__ == "__main__":
