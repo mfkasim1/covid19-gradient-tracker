@@ -1,7 +1,10 @@
 from abc import abstractmethod, abstractproperty
+import pickle
 import torch
 import pyro
 from pyro.distributions import Normal, Uniform, Laplace, MultivariateNormal
+from pyro.infer import MCMC, NUTS
+import pyro.poutine as poutine
 import matplotlib.pyplot as plt
 
 class BaseModel(object):
@@ -13,9 +16,13 @@ class BaseModel(object):
     def forward(self, t):
         pass
 
+    @abstractmethod
+    def simulate_samples(self, samples):
+        pass
+
 class Model1(BaseModel):
     def __init__(self, a_bounds=(-2,3),
-        b_bounds=(-1,0.5), logs_bounds=(-2,1),
+        b_bounds=(-1,0.5), logs_bounds=(-8,1),
         log_lscale_bounds=(0,3.0)):
         """
         This model assumes:
@@ -40,6 +47,7 @@ class Model1(BaseModel):
         # t, yt: (n,)
         n = len(t)
         dt = t[1] - t[0]
+        self.dt = dt
         nzero = torch.zeros(n)
 
         # sample the prior
@@ -61,17 +69,82 @@ class Model1(BaseModel):
 
         return logysim
 
-if __name__ == "__main__":
-    # main()
-    t = torch.linspace(0, 30, 100)
+    def simulate_samples(self, samples):
+        a = samples["a"] # (nsamples,)
+        b = samples["b"] # (nsamples, n)
+        int_bdt = torch.cumsum(b, dim=-1) * self.dt # (nsamples, n)
+        mu = a.unsqueeze(-1) + int_bdt
+        return mu # (nsamples, n)
+
+def conditioned_model(model, t, yt):
+    # model must be a BaseModel
+    assert isinstance(model, BaseModel)
+    if model.output_type == "yt":
+        obs = yt
+    elif model.output_type == "logyt":
+        obs = torch.log(torch.clamp(yt, min=1.0))
+
+    return poutine.condition(model.forward, data={model.output_type: obs})(t)
+
+def infer(args, model, t, yt):
+    nuts_kernel = NUTS(conditioned_model, jit_compile=args.jit)
+    mcmc = MCMC(nuts_kernel,
+            num_samples=args.nsamples,
+            warmup_steps=args.nwarmups,
+            num_chains=args.nchains)
+    mcmc.run(model, t, yt)
+    mcmc.summary(prob=0.95)
+    return mcmc
+
+def plot_interval(t, ysamples, color="C0"): # numpy operation
+    ymedian = np.median(ysamples, axis=0)
+    yl1 = np.percentile(ysamples, 25., axis=0)
+    yu1 = np.percentile(ysamples, 75., axis=0)
+    yl2 = np.percentile(ysamples, 2.5, axis=0)
+    yu2 = np.percentile(ysamples, 97.5, axis=0)
+    plt.plot(t, ymedian, color=color)
+    plt.fill_between(t, yl1, yu1, color=color, alpha=0.6)
+    plt.fill_between(t, yl2, yu2, color=color, alpha=0.3)
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description='MCMC')
+    parser.add_argument('--nsamples', type=int, default=1000,
+                        help='number of MCMC samples (default: 1000)')
+    parser.add_argument('--nchains', type=int, default=1,
+                        help='number of parallel MCMC chains (default: 1)')
+    parser.add_argument('--nwarmups', type=int, default=1000,
+                        help='number of MCMC samples for warmup (default: 1000)')
+    parser.add_argument('--jit', action='store_true', default=False)
+    parser.add_argument('--saveto', type=str, default=None)
+    parser.add_argument('--loadfrom', type=str, default=None)
+    args = parser.parse_args()
+
+    t = torch.linspace(0, 10, 11)
     yt = torch.exp(0.14 * t)
-    logyt = torch.log(yt)
     model = Model1()
 
-    alpha = 1.0 * 0.1
-    for i in range(100):
-        logy = model.forward(t)
-        plt.plot(t, logy, 'C0-', alpha=alpha)
-    plt.plot(t, logyt, 'C1-')
-    # plt.gca().set_yscale("log")
+    if args.loadfrom is None:
+        mcmc = infer(args, model, t, yt)
+        samples = mcmc.get_samples()
+        if args.saveto is not None:
+            with open(args.saveto, "wb") as fb:
+                pickle.dump(samples, fb)
+    else:
+        with open(args.loadfrom, "rb") as fb:
+            samples = pickle.load(fb)
+
+    b = samples["b"].detach().numpy() # (nsamples, n)
+    mu = model.simulate_samples(samples).detach().numpy() # (nsamples, n)
+    tnp = t.numpy()
+
+    plt.figure(figsize=(12,6))
+    plt.subplot(1,2,1)
+    plot_interval(tnp, b, color="C2")
+    plt.subplot(1,2,2)
+    plot_interval(tnp, mu, color="C1")
+    plt.bar(tnp, yt)
     plt.show()
+
+if __name__ == "__main__":
+    main()
