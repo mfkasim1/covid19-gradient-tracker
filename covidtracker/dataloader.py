@@ -11,11 +11,13 @@ class DataLoader(object):
                 "file": "data/indonesia.csv",
                 "xticks": lambda pddata: pddata.tanggal,
                 "retrieve_fcn": lambda pddata: pddata.kasus_baru,
+                "ylabel": "Kasus positif baru per hari",
             },
             "id_new_deaths": {
                 "file": "data/indonesia.csv",
                 "xticks": lambda pddata: pddata.tanggal,
                 "retrieve_fcn": lambda pddata: pddata.meninggal_baru,
+                "ylabel": "Kasus kematian baru per hari",
             }
         }[dataidentifier]
         self.dataidentifier = dataidentifier
@@ -32,6 +34,10 @@ class DataLoader(object):
     @property
     def tdate(self):
         return self._xticks
+
+    @property
+    def ylabel(self):
+        return self.address["ylabel"]
 
     def get_full_address(self, reladdr):
         return os.path.join(self.ct_path, reladdr)

@@ -149,13 +149,15 @@ def main(dtype=torch.float):
     plt.figure(figsize=(12,6))
     plt.subplot(1,2,1)
     plot_interval(tnp, b, color="C2")
-    plt.ylabel("Gradien")
+    plt.plot(tnp, tnp*0, "k--")
+    plt.ylabel("Faktor eksponensial")
     plt.xlabel("Hari")
+    plt.title(dl.ylabel)
     plt.subplot(1,2,2)
+    plt.bar(tnp, yt, color="C0", alpha=0.6)
     plot_interval(tnp, mu, color="C1")
-    plt.bar(tnp, yt)
-    plt.ylabel("Jumlah kasus")
     plt.xlabel("Hari")
+    plt.title(dl.ylabel)
     plt.show()
 
 if __name__ == "__main__":
