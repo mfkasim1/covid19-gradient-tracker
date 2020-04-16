@@ -130,9 +130,12 @@ def main(dtype=torch.float):
     model = Model1()
 
     samples_fname = dl.get_fname()
+    print("Samples file: %s" % samples_fname)
+    # load the samples
     if os.path.exists(samples_fname) and not args.restart:
         with open(samples_fname, "rb") as fb:
             samples = pickle.load(fb)
+    # create the samples and save it
     else:
         mcmc = infer(args, model, t, yt)
         samples = mcmc.get_samples()
