@@ -1,6 +1,7 @@
 from abc import abstractmethod, abstractproperty
 import pickle
 import torch
+import numpy as np
 import pyro
 from pyro.distributions import Normal, Uniform, Laplace, MultivariateNormal
 from pyro.infer import MCMC, NUTS
@@ -47,7 +48,6 @@ class Model1(BaseModel):
         # t, yt: (n,)
         n = len(t)
         dt = t[1] - t[0]
-        self.dt = dt
         nzero = torch.zeros(n)
 
         # sample the prior
@@ -72,9 +72,10 @@ class Model1(BaseModel):
     def simulate_samples(self, samples):
         a = samples["a"] # (nsamples,)
         b = samples["b"] # (nsamples, n)
-        int_bdt = torch.cumsum(b, dim=-1) * self.dt # (nsamples, n)
+        int_bdt = torch.cumsum(b, dim=-1)# * self.dt # (nsamples, n)
         mu = a.unsqueeze(-1) + int_bdt
-        return mu # (nsamples, n)
+        yt = torch.exp(mu)
+        return yt # (nsamples, n)
 
 def conditioned_model(model, t, yt):
     # model must be a BaseModel
@@ -141,9 +142,13 @@ def main():
     plt.figure(figsize=(12,6))
     plt.subplot(1,2,1)
     plot_interval(tnp, b, color="C2")
+    plt.ylabel("Gradien")
+    plt.xlabel("Hari")
     plt.subplot(1,2,2)
     plot_interval(tnp, mu, color="C1")
     plt.bar(tnp, yt)
+    plt.ylabel("Jumlah kasus")
+    plt.xlabel("Hari")
     plt.show()
 
 if __name__ == "__main__":
