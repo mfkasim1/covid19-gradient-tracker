@@ -10,6 +10,8 @@ import pyro.poutine as poutine
 import matplotlib.pyplot as plt
 from covidtracker.dataloader import DataLoader
 
+dtype=torch.float
+
 class BaseModel(object):
     @abstractproperty
     def output_type():
@@ -114,20 +116,20 @@ def plot_interval(t, ysamples, color="C0"): # numpy operation
     plt.fill_between(t, yl2, yu2, color=color, alpha=0.3, label="95% CI")
     plt.fill_between(t, yl3, yu3, color=color, alpha=0.15, label="99% CI")
 
-def main(dtype=torch.float):
-    import argparse
-    parser = argparse.ArgumentParser(description='MCMC')
-    parser.add_argument('data', type=str)
-    parser.add_argument('--nsamples', type=int, default=1000,
-                        help='number of MCMC samples (default: 1000)')
-    parser.add_argument('--nchains', type=int, default=1,
-                        help='number of parallel MCMC chains (default: 1)')
-    parser.add_argument('--nwarmups', type=int, default=1000,
-                        help='number of MCMC samples for warmup (default: 1000)')
-    parser.add_argument('--jit', action='store_true', default=False)
-    parser.add_argument('--restart', action='store_true', default=False)
-    parser.add_argument('--savefig', type=str, default=None)
-    args = parser.parse_args()
+class EmptyClass(object):
+    def __init__(self):
+        pass
+
+def update_samples(data, nsamples=1000, nchains=1, nwarmups=1000, jit=True,
+        restart=False, **kwargs):
+
+    args = EmptyClass()
+    args.__dict__["data"] = data
+    args.__dict__["nsamples"] = nsamples
+    args.__dict__["nchains"] = nchains
+    args.__dict__["nwarmups"] = nwarmups
+    args.__dict__["jit"] = jit
+    args.__dict__["restart"] = restart
 
     # load the data
     dl = DataLoader(args.data)
@@ -147,6 +149,22 @@ def main(dtype=torch.float):
         samples = mcmc.get_samples()
         with open(samples_fname, "wb") as fb:
             pickle.dump(samples, fb)
+
+    res = EmptyClass()
+    res.__dict__["samples"] = samples
+    res.__dict__["model"] = model
+    res.__dict__["dataloader"] = dl
+    return res
+
+def main(args):
+    res = update_samples(**args.__dict__)
+    dl = res.dataloader
+    model = res.model
+    samples = res.samples
+
+    # get the data
+    yt = torch.tensor(dl.ytime, dtype=dtype)
+    t = torch.arange(yt.shape[0], dtype=dtype) * 1.0
 
     # simulating the samples
     b = samples["b"].detach().numpy() # (nsamples, n)
@@ -191,4 +209,18 @@ def main(dtype=torch.float):
         plt.close()
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description='MCMC')
+    parser.add_argument('data', type=str)
+    parser.add_argument('--nsamples', type=int, default=1000,
+                        help='number of MCMC samples (default: 1000)')
+    parser.add_argument('--nchains', type=int, default=1,
+                        help='number of parallel MCMC chains (default: 1)')
+    parser.add_argument('--nwarmups', type=int, default=1000,
+                        help='number of MCMC samples for warmup (default: 1000)')
+    parser.add_argument('--jit', action='store_true', default=False)
+    parser.add_argument('--restart', action='store_true', default=False)
+    parser.add_argument('--savefig', type=str, default=None)
+    args = parser.parse_args()
+
+    main(args)
