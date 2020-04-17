@@ -7,7 +7,7 @@ permalink: /idcovid19/
 
 ## Apakah kurva telah melandai?
 
-Sumber data: KawalCOVID19
+Sumber data: [KawalCOVID19](https://kawalcovid19.id/)
 {% for place in places %}
 #### {{ place['name'] }}
 
