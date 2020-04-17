@@ -82,12 +82,14 @@ class Model1(BaseModel):
 def conditioned_model(model, t, yt):
     # model must be a BaseModel
     assert isinstance(model, BaseModel)
+    fcn = model.forward
     if model.output_type == "yt":
         obs = yt
     elif model.output_type == "logyt":
         obs = torch.log(torch.clamp(yt, min=1.0))
+        # fcn = poutine.mask(fcn, mask=(yt > 0))
 
-    return poutine.condition(model.forward, data={model.output_type: obs})(t)
+    return poutine.condition(fcn, data={model.output_type: obs})(t)
 
 def infer(args, model, t, yt):
     nuts_kernel = NUTS(conditioned_model, jit_compile=args.jit)

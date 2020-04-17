@@ -3,6 +3,7 @@ import datetime
 import pandas as pd
 import numpy as np
 import covidtracker as ct
+import matplotlib.pyplot as plt
 
 class DataLoader(object):
     def __init__(self, dataidentifier):
@@ -41,11 +42,15 @@ class DataLoader(object):
         }
         # add the data handler for each provinces
         provinces = "Aceh,Bali,Banten,Babel,Bengkulu,DIY,Jakarta,Jambi,Jabar,Jateng,Jatim,Kalbar,Kaltim,Kalteng,Kalsel,Kaltara,KepRi,NTB,Sumsel,Sumbar,Sulut,Sumut,Sultra,Sulsel,Sulteng,Lampung,Riau,Malut,Maluku,Papbar,Papua,Sulbar,NTT,Gorontalo,x".split(",")
+        def get_retr_fcn(province):
+            def retr_fcn(pddata):
+                return pddata[province]
+            return retr_fcn
         for province in provinces:
             self.all_addresses["idprov_%s_new_cases" % province.lower()] = {
                 "file": "data/provinsi.csv",
                 "xticks": lambda pddata: pddata.tanggal,
-                "retrieve_fcn": lambda pddata: pddata[province],
+                "retrieve_fcn": get_retr_fcn(province),
                 "ylabel": "Kasus positif per hari (%s)" % province
             }
 
