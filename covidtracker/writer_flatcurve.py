@@ -93,11 +93,23 @@ def main(img_path, file_path):
         plt.savefig(os.path.join(img_path, "%s.png"%df))
         plt.close()
 
+        ################## deciding the results ##################
+        b_last = b[:,-1]
+        decline_portion = np.sum(b_last < 0) * 1.0 / b.shape[0]
+        if decline_portion > 0.99:
+            flatcurve_res = "**turun**"
+        elif decline_portion > 0.95:
+            flatcurve_res = "**kemungkinan** turun"
+        elif decline_portion > 0.86:
+            flatcurve_res = "ada indikasi penurunan, tapi belum pasti"
+        else:
+            flatcurve_res = "belum dapat disimpulkan"
+
         ## save the information for the templating
         places.append({
             "dataid": df,
             "name": names[i],
-            "flatcurve_result": "belum dapat disimpulkan"
+            "flatcurve_result": flatcurve_res
         })
 
     with open(ftemplate, "r") as f:
