@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from jinja2 import Template
+from scipy.stats import hypergeom
 import matplotlib.pyplot as plt
 import covidtracker as ct
 from covidtracker.dataloader import DataLoader
@@ -31,6 +32,14 @@ def plot_data_and_sim(res):
     plt.title(dl.ylabel)
     plt.legend(loc="upper left")
 
+def get_weekly_sum(y, a=7):
+    yy = y[:((y.shape[-1]//a)*a)].reshape(-1,a).sum(axis=-1)
+    return yy
+
+def get_in_week(t, a=7, i=0):
+    ty = t[:((t.shape[-1]//a)*a)].reshape(-1,a)[:,i]
+    return ty
+
 def plot_weekly_tests(res):
     yobs = res.yobs
 
@@ -40,11 +49,76 @@ def plot_weekly_tests(res):
     ttest = np.arange(ytest.shape[0])
 
     a = 7
-    yy = ytest[:((yobs.shape[0]//a)*a)].reshape(-1,a).sum(axis=-1)
-    ty = ttest[:((yobs.shape[0]//a)*a)].reshape(-1,a)[:,0]
+    yy = get_weekly_sum(ytest)
+    ty = get_in_week(ttest, i=0)
+    # yy = ytest[:((yobs.shape[0]//a)*a)].reshape(-1,a).sum(axis=-1)
+    # ty = ttest[:((yobs.shape[0]//a)*a)].reshape(-1,a)[:,0]
     plt.bar(ty, yy, width=a-0.5)
     plt.title("Pemeriksaan per minggu")
     plt.xticks(ttest[::7], dltest.tdate[::7], rotation=90)
+
+def plot_weekly_tests_prov(res):
+    yobs = res.yobs # new positives / day
+
+    # get all the tests and the positive cases from all over the country
+    dltest = DataLoader("id_new_tests")
+    dlcase = DataLoader("id_new_cases")
+    ttest = dltest.tdate
+    ytest = dltest.ytime
+    ycase = dlcase.ytime
+    assert len(ytest) == len(ycase)
+    ntest_days = len(ytest)
+    nobs_days = len(yobs)
+    missing_days = ntest_days - nobs_days
+    offset_test = int(np.ceil(missing_days / 7.0)) * 7
+    offset_obs = offset_test - missing_days
+
+    # offset the positive tests to match the weekly test
+    yobs = yobs[offset_obs:]
+    ytest = ytest[offset_test:]
+    ycase = ycase[offset_test:]
+    ttest = ttest[offset_test:]
+    assert len(yobs) == len(ytest)
+    assert len(yobs) == len(ycase)
+    # yobs and ytest should have the same lengths by now
+
+    # get the weekly data
+    ycase = get_weekly_sum(ycase)
+    yobs = get_weekly_sum(yobs)
+    ytest = get_weekly_sum(ytest)
+    ttest = get_in_week(ttest, i=0)
+    ndata = len(yobs)
+
+    # calculate the posterior distribution of the number of tests
+    yall_positives = ycase.astype(np.int)
+    yall_tests = ytest.astype(np.int)
+    y_positives = yobs.astype(np.int)
+    max_tests = yall_tests.max()
+    posteriors = np.zeros((ndata, max_tests+1))
+    for i in range(ndata):
+        yall_positive = yall_positives[i]
+        yall_test = yall_tests[i]
+        y_positive = y_positives[i]
+        y_test = np.arange(yall_test+1)
+
+        lhood = hypergeom.pmf(y_positive, yall_test, yall_positive, y_test)
+        if np.sum(lhood) == 0:
+            print(y_positive, yall_test, yall_positive, res.dataloader.dataidentifier)
+        posteriors[i,:len(lhood)] = lhood / np.sum(lhood) # (max_tests+1)
+
+    cdf = np.cumsum(posteriors, axis=-1)
+    def h(cdf, q):
+        return np.sum(cdf < q, axis=-1)
+
+    x = np.arange(ndata)
+    ymed = h(cdf, 0.5)
+    yl1 = h(cdf, 0.025)
+    yu1 = h(cdf, 0.975)
+    plt.bar(x, height=ymed, alpha=0.5, label="Median")
+    plt.errorbar(x, ymed, [ymed-yl1, yu1-ymed], fmt="o", label="95% CI")
+    plt.xticks(x, ttest, rotation=90)
+    plt.legend()
+    plt.title("Perkiraan jumlah pemeriksaan mingguan")
 
 def main(img_path, file_path):
     provinces = ["Jakarta", "Jabar", "Jatim", "Sulsel"]
@@ -88,6 +162,9 @@ def main(img_path, file_path):
             # show the tests
             plt.subplot(1,ncols,3)
             plot_weekly_tests(res)
+        elif df.startswith("idprov_") and df.endswith("_new_cases"):
+            plt.subplot(1,ncols,3)
+            plot_weekly_tests_prov(res)
 
         plt.tight_layout()
         plt.savefig(os.path.join(img_path, "%s.png"%df))
