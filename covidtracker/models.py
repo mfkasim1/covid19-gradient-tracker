@@ -154,6 +154,8 @@ def update_samples(data, nsamples=1000, nchains=1, nwarmups=1000, jit=True,
     res.__dict__["samples"] = samples
     res.__dict__["model"] = model
     res.__dict__["dataloader"] = dl
+    res.__dict__["ysim"] = model.simulate_samples(samples).detach().numpy()
+    res.__dict__["yobs"] = dl.ytime
     return res
 
 def main(args):
@@ -161,15 +163,12 @@ def main(args):
     dl = res.dataloader
     model = res.model
     samples = res.samples
-
-    # get the data
-    yt = torch.tensor(dl.ytime, dtype=dtype)
-    t = torch.arange(yt.shape[0], dtype=dtype) * 1.0
+    ysim = res.ysim
+    yobs = res.yobs
 
     # simulating the samples
     b = samples["b"].detach().numpy() # (nsamples, n)
-    mu = model.simulate_samples(samples).detach().numpy() # (nsamples, n)
-    tnp = t.numpy()
+    tnp = np.arange(len(yobs))
 
     ncols = 3
     plt.figure(figsize=(4*ncols,4))
@@ -182,8 +181,8 @@ def main(args):
     plt.title(dl.ylabel)
     plt.legend(loc="upper right")
     plt.subplot(1,ncols,2)
-    plt.bar(tnp, yt, color="C1", alpha=0.6)
-    plot_interval(tnp, mu, color="C1")
+    plt.bar(tnp, yobs, color="C1", alpha=0.6)
+    plot_interval(tnp, ysim, color="C1")
     plt.xticks(tnp[::7], dl.tdate[::7], rotation=90)
     plt.title(dl.ylabel)
     plt.legend(loc="upper left")
@@ -196,8 +195,8 @@ def main(args):
 
         plt.subplot(1,ncols,3)
         a = 7
-        yy = ytest[:((yt.shape[0]//a)*a)].reshape(-1,a).sum(axis=-1)
-        ty = ttest[:((yt.shape[0]//a)*a)].reshape(-1,a)[:,0]#.sum(axis=-1)
+        yy = ytest[:((yobs.shape[0]//a)*a)].reshape(-1,a).sum(axis=-1)
+        ty = ttest[:((yobs.shape[0]//a)*a)].reshape(-1,a)[:,0]
         plt.bar(ty, yy, width=a-0.5)
         plt.title("Pemeriksaan per minggu")
         plt.xticks(ttest[::7], dltest.tdate[::7], rotation=90)
