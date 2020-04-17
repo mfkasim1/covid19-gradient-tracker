@@ -126,6 +126,7 @@ def main(dtype=torch.float):
                         help='number of MCMC samples for warmup (default: 1000)')
     parser.add_argument('--jit', action='store_true', default=False)
     parser.add_argument('--restart', action='store_true', default=False)
+    parser.add_argument('--savefig', type=str, default=None)
     args = parser.parse_args()
 
     # load the data
@@ -147,16 +148,15 @@ def main(dtype=torch.float):
         with open(samples_fname, "wb") as fb:
             pickle.dump(samples, fb)
 
+    # simulating the samples
     b = samples["b"].detach().numpy() # (nsamples, n)
     mu = model.simulate_samples(samples).detach().numpy() # (nsamples, n)
     tnp = t.numpy()
 
-    dltest = DataLoader("id_new_tests")
-    ytest = dltest.ytime
-    ttest = np.arange(ytest.shape[0])
-
-    plt.figure(figsize=(12,4))
-    ncols = 3
+    ncols = 2
+    plt.figure(figsize=(4*ncols,4))
+    if args.data == "id_new_cases":
+        ncols = 3
     plt.subplot(1,ncols,1)
     plot_interval(tnp, b, color="C2")
     plt.plot(tnp, tnp*0, "k--")
@@ -170,18 +170,25 @@ def main(dtype=torch.float):
     plt.xticks(tnp[::7], dl.tdate[::7], rotation=90)
     plt.title(dl.ylabel)
 
-    if ncols == 3:
+    if args.data == "new_cases":
+        # show the tests
+        dltest = DataLoader("id_new_tests")
+        ytest = dltest.ytime
+        ttest = np.arange(ytest.shape[0])
+
         plt.subplot(1,ncols,3)
         a = 7
         yy = ytest[:((yt.shape[0]//a)*a)].reshape(-1,a).sum(axis=-1)
         ty = ttest[:((yt.shape[0]//a)*a)].reshape(-1,a)[:,0]#.sum(axis=-1)
         plt.bar(ty, yy, width=a-0.5)
-        # plt.bar(ttest, ytest, color="C0")
         plt.title("Pemeriksaan per minggu")
-        # plot_interval(tnp, mu, color="C1")
         plt.xticks(ttest[::7], dltest.tdate[::7], rotation=90)
     plt.tight_layout()
-    plt.show()
+    if args.savefig is None:
+        plt.show()
+    else:
+        plt.savefig(args.savefig)
+        plt.close()
 
 if __name__ == "__main__":
     main()
