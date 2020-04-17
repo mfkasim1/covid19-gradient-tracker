@@ -153,24 +153,24 @@ def main(dtype=torch.float):
     mu = model.simulate_samples(samples).detach().numpy() # (nsamples, n)
     tnp = t.numpy()
 
-    ncols = 2
+    ncols = 3
     plt.figure(figsize=(4*ncols,4))
-    if args.data == "id_new_cases":
-        ncols = 3
+
     plt.subplot(1,ncols,1)
     plot_interval(tnp, b, color="C2")
     plt.plot(tnp, tnp*0, "k--")
     plt.ylabel("Faktor eksponensial")
     plt.xticks(tnp[::7], dl.tdate[::7], rotation=90)
     plt.title(dl.ylabel)
-    plt.legend()
+    plt.legend(loc="upper right")
     plt.subplot(1,ncols,2)
     plt.bar(tnp, yt, color="C1", alpha=0.6)
     plot_interval(tnp, mu, color="C1")
     plt.xticks(tnp[::7], dl.tdate[::7], rotation=90)
     plt.title(dl.ylabel)
+    plt.legend(loc="upper left")
 
-    if args.data == "new_cases":
+    if args.data == "id_new_cases":
         # show the tests
         dltest = DataLoader("id_new_tests")
         ytest = dltest.ytime
