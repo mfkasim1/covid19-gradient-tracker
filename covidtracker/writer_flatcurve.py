@@ -100,7 +100,7 @@ def main(img_path, file_path):
             flatcurve_res = "**turun**"
         elif decline_portion > 0.95:
             flatcurve_res = "**kemungkinan** turun"
-        elif decline_portion > 0.86:
+        elif decline_portion > 0.75:
             flatcurve_res = "ada indikasi penurunan, tapi belum pasti"
         else:
             flatcurve_res = "belum dapat disimpulkan"
