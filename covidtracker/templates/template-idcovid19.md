@@ -1,15 +1,15 @@
 ---
 layout: page
 short_title: COVID-19 (ID)
-title: COVID-19 di Indonesia
+title:
 permalink: /idcovid19/
 ---
 
-### Apakah kurva telah melandai?
+## Apakah kurva telah melandai?
 
 Sumber data: KawalCOVID19
 {% for place in places %}
-##### {{ place['name'] }}
+#### {{ place['name'] }}
 
 Hasil: {{ place['flatcurve_result'] }}
 
