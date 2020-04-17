@@ -7,7 +7,8 @@ permalink: /idcovid19/
 
 ## Apakah kurva penyebaran telah turun?
 
-Sumber data: [KawalCOVID19](https://kawalcovid19.id/)
+Sumber data: [KawalCOVID19](https://kawalcovid19.id/)<br/>
+Diperbarui pada: {{ date }}
 {% for place in places %}
 #### {{ place['name'] }}
 

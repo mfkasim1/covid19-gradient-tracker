@@ -1,4 +1,5 @@
 import os
+import datetime
 import numpy as np
 from jinja2 import Template
 from scipy.stats import hypergeom
@@ -191,7 +192,8 @@ def main(img_path, file_path):
 
     with open(ftemplate, "r") as f:
         template = Template(f.read())
-    content = template.render(places=places)
+    today = datetime.date.today()
+    content = template.render(places=places, date=today.strftime("%d/%m/%Y"))
     with open(file_path, "w") as f:
         f.write(content)
 
