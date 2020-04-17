@@ -6,7 +6,7 @@ import covidtracker as ct
 
 class DataLoader(object):
     def __init__(self, dataidentifier):
-        self.address = {
+        self.all_addresses = {
             "id_new_cases": {
                 "file": "data/indonesia.csv",
                 "xticks": lambda pddata: pddata.tanggal,
@@ -38,7 +38,18 @@ class DataLoader(object):
                 "retrieve_fcn": lambda pddata: np.asarray(pddata.pemakaman_protap[16:]),
                 "ylabel": "Pemakaman protap COVID-19",
             }
-        }[dataidentifier]
+        }
+        # add the data handler for each provinces
+        provinces = "Aceh,Bali,Banten,Babel,Bengkulu,DIY,Jakarta,Jambi,Jabar,Jateng,Jatim,Kalbar,Kaltim,Kalteng,Kalsel,Kaltara,KepRi,NTB,Sumsel,Sumbar,Sulut,Sumut,Sultra,Sulsel,Sulteng,Lampung,Riau,Malut,Maluku,Papbar,Papua,Sulbar,NTT,Gorontalo,x".split(",")
+        for province in provinces:
+            self.all_addresses["idprov_%s_new_cases" % province.lower()] = {
+                "file": "data/provinsi.csv",
+                "xticks": lambda pddata: pddata.tanggal,
+                "retrieve_fcn": lambda pddata: pddata[province],
+                "ylabel": "Kasus positif per hari (%s)" % province
+            }
+
+        self.address = self.all_addresses[dataidentifier]
         self.dataidentifier = dataidentifier
         self.ct_path = os.path.split(ct.__file__)[0]
 
