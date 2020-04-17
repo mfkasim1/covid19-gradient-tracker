@@ -9,7 +9,7 @@ permalink: /idcovid19/
 
 Sumber data: KawalCOVID19
 {% for place in places %}
-**{{ place['name'] }}**
+##### {{ place['name'] }}
 
 Hasil: {{ place['flatcurve_result'] }}
 

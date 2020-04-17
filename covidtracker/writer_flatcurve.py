@@ -47,10 +47,9 @@ def plot_weekly_tests(res):
     plt.xticks(ttest[::7], dltest.tdate[::7], rotation=90)
 
 def main(img_path, file_path):
-    fields = ["id_new_cases", "idprov_jakarta_new_cases", \
-        "idprov_jabar_new_cases", "idprov_jatim_new_cases",
-        "idprov_sulsel_new_cases"]
-    names = ["Indonesia", "Jakarta", "Jabar", "Jatim", "Sulsel"]
+    provinces = ["Jakarta", "Jabar", "Jatim", "Sulsel"]
+    fields = ["id_new_cases"] + ["idprov_%s_new_cases" % p.lower() for p in provinces]
+    names = ["Indonesia"] + provinces
 
     ftemplate = os.path.join(os.path.split(ct.__file__)[0], "templates", "template-idcovid19.md")
 
