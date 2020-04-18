@@ -28,7 +28,7 @@ class BaseModel(object):
 
 class Model1(BaseModel):
     def __init__(self, a_bounds=(-2,3),
-        b_bounds=(-1,0.5), logs_bounds=(-8,1),
+        b_bounds=(0.01,0.8), logs_bounds=(-8,1),
         log_lscale_bounds=(0,3.0)):
         """
         This model assumes:
