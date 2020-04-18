@@ -34,11 +34,13 @@ def plot_data_and_sim(res):
     plt.legend(loc="upper left")
 
 def get_weekly_sum(y, a=7):
-    yy = y[:((y.shape[-1]//a)*a)].reshape(-1,a).sum(axis=-1)
+    # yy = y[:((y.shape[-1]//a)*a)].reshape(-1,a).sum(axis=-1)
+    yy = y[y.shape[-1]%7:].reshape(-1,a).sum(axis=-1)
     return yy
 
 def get_in_week(t, a=7, i=0):
-    ty = t[:((t.shape[-1]//a)*a)].reshape(-1,a)[:,i]
+    # ty = t[:((t.shape[-1]//a)*a)].reshape(-1,a)[:,i]
+    ty = t[t.shape[-1]%7:].reshape(-1,a)[:,i]
     return ty
 
 def plot_weekly_tests(res):
@@ -52,11 +54,11 @@ def plot_weekly_tests(res):
     a = 7
     yy = get_weekly_sum(ytest)
     ty = get_in_week(ttest, i=0)
-    # yy = ytest[:((yobs.shape[0]//a)*a)].reshape(-1,a).sum(axis=-1)
-    # ty = ttest[:((yobs.shape[0]//a)*a)].reshape(-1,a)[:,0]
+    tticks = get_in_week(dltest.tdate, i=0)
     plt.bar(ty, yy, width=a-0.5)
     plt.title("Pemeriksaan per minggu")
-    plt.xticks(ttest[::7], dltest.tdate[::7], rotation=90)
+    plt.xticks(ty, tticks, rotation=90)
+    return yy
 
 def plot_weekly_tests_prov(res):
     yobs = res.yobs # new positives / day
@@ -120,6 +122,7 @@ def plot_weekly_tests_prov(res):
     plt.xticks(x, ttest, rotation=90)
     plt.legend()
     plt.title("Perkiraan jumlah pemeriksaan mingguan")
+    return ymed, (h(cdf, 0.975)-h(cdf, 0.025))/2.0
 
 def main(img_path, file_path):
     provinces = ["Jakarta", "Jabar", "Jatim", "Sulsel"]
@@ -162,10 +165,17 @@ def main(img_path, file_path):
         if df == "id_new_cases":
             # show the tests
             plt.subplot(1,ncols,3)
-            plot_weekly_tests(res)
+            test_weekly = plot_weekly_tests(res)
+            # calculate the ratio for the last week
+            test_ratio = test_weekly[-1] / test_weekly[-2]
+            test_ratio_2std = 1e-8 # very small std
         elif df.startswith("idprov_") and df.endswith("_new_cases"):
             plt.subplot(1,ncols,3)
-            plot_weekly_tests_prov(res)
+            test_weekly, test_weekly_2std = plot_weekly_tests_prov(res)
+            test_ratio = test_weekly[-1] / test_weekly[-2]
+            test_ratio_2std = ((test_weekly_2std[-1] / test_weekly[-1])**2 +\
+                               (test_weekly_2std[-2] / test_weekly[-2])**2)**.5 *\
+                                test_ratio
 
         plt.tight_layout()
         plt.savefig(os.path.join(img_path, "%s.png"%df))
@@ -173,15 +183,34 @@ def main(img_path, file_path):
 
         ################## deciding the results ##################
         b_last = b[:,-1]
+        # calculate the exponential factor from the weekly ratio
+        b_test = np.log(test_ratio) / 7.0
+        b_test_std = test_ratio_2std / test_ratio
+        lower_grad_portion = np.sum(b_last < b_test) * 1.0 / b.shape[0]
+
+        # calculate the probability of the curve going down
         decline_portion = np.sum(b_last < 0) * 1.0 / b.shape[0]
-        if decline_portion > 0.99:
+
+        # calculate the total probability of it's really going down
+        if b_test < 0:
+            decline_prob = lower_grad_portion
+        else:
+            decline_prob = decline_portion
+
+        if decline_prob > 0.99:
             flatcurve_res = "**turun**"
-        elif decline_portion > 0.95:
+        elif decline_prob > 0.95:
             flatcurve_res = "**kemungkinan** turun"
-        elif decline_portion > 0.75:
+        elif decline_prob > 0.75:
             flatcurve_res = "ada indikasi penurunan, tapi belum pasti"
+        elif decline_prob < 0.75 and decline_portion > 0.75:
+            flatcurve_res = "kurva terlihat turun, tapi bisa jadi karena jumlah tes yang menurun"
         else:
             flatcurve_res = "belum dapat disimpulkan"
+
+        # calculate the probability of the curve going down not because of the test
+        # i.e. compare the test gradient and the curve gradient
+
 
         ## save the information for the templating
         places.append({
