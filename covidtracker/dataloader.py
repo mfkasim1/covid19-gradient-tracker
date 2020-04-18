@@ -14,6 +14,12 @@ class DataLoader(object):
                 "retrieve_fcn": lambda pddata: pddata.kasus_baru,
                 "ylabel": "Kasus positif baru per hari",
             },
+            "it_new_cases": {
+                "file": "data/italy.csv",
+                "xticks": lambda pddata: pddata.tanggal,
+                "retrieve_fcn": lambda pddata: pddata.kasus_baru,
+                "ylabel": "Kasus positif baru per hari (Italia)",
+            },
             "id_new_cases_test_adjusted": {
                 "file": "data/indonesia.csv",
                 "xticks": lambda pddata: pddata.tanggal,
