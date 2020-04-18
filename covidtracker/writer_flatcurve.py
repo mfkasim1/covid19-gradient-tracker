@@ -14,9 +14,9 @@ def plot_gradient(res):
     b = res.samples["b"].detach().numpy()
     tnp = np.arange(b.shape[1])
 
-    plot_interval(tnp, b, color="C2")
+    plot_interval(tnp, (np.exp(b)-1)*100, color="C2")
     plt.plot(tnp, tnp*0, "k--")
-    plt.ylabel("Faktor eksponensial")
+    plt.ylabel("Persentase pertumbuhan")
     plt.xticks(tnp[::7], dl.tdate[::7], rotation=90)
     plt.title(dl.ylabel)
     plt.legend(loc="upper right")
@@ -50,15 +50,17 @@ def plot_weekly_tests(res):
     dltest = DataLoader("id_new_tests")
     ytest = dltest.ytime
     ttest = np.arange(ytest.shape[0])
+    tticks = dltest.tdate
 
     a = 7
-    yy = get_weekly_sum(ytest)
-    ty = get_in_week(ttest, i=0)
-    tticks = get_in_week(dltest.tdate, i=0)
-    plt.bar(ty, yy, width=a-0.5)
+    ytest = get_weekly_sum(ytest)
+    ttest = get_in_week(ttest, i=0)
+    tticks = get_in_week(tticks, i=0)
+    plt.bar(ttest, ytest, width=a-0.5)
+    # plt.bar(ttest, ytest)
     plt.title("Pemeriksaan per minggu")
-    plt.xticks(ty, tticks, rotation=90)
-    return yy
+    plt.xticks(ttest, tticks, rotation=90)
+    return ytest
 
 def plot_weekly_tests_prov(res):
     yobs = res.yobs # new positives / day
