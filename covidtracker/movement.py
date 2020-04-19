@@ -3,8 +3,10 @@ import datetime
 import pickle
 import geopandas as gp
 import pandas as pd
+import numpy as np
 from shapely.geometry import Point
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 def find_province(map_geom, point):
     for i in range(len(map_geom)):
@@ -52,6 +54,46 @@ class Information(object):
             yield tnow
             tnow = tnow + self.tdelta
 
+class ProvinceMovement(object):
+    def __init__(self, dct=None):
+        if dct is None:
+            self.dct = {}
+        else:
+            self.dct = dct
+
+    def add_nbaseline(self, start_province, end_province, value):
+        add_key(self.dct, value, start_province, end_province, "n_baseline")
+
+    def add_ncrisis(self, start_province, end_province, value):
+        add_key(self.dct, value, start_province, end_province, "n_crisis")
+
+    def get_dct(self):
+        return self.dct
+
+    def load_dct(self, dct):
+        self.dct = dct
+
+    def get_outgoing_province_changes(self, outprovince=True, inprovince=True):
+        res_baseline = {}
+        res_crisis = {}
+        for start_province in self.dct:
+            start_dct = self.dct[start_province]
+            total_baseline = 0
+            total_crisis = 0
+            # total_changes = 0.0
+            for end_province in start_dct:
+                if not outprovince and start_province != end_province: continue
+                if not inprovince and start_province == end_province: continue
+                pair_dct = start_dct[end_province]
+                total_baseline += pair_dct["n_baseline"]
+                total_crisis += pair_dct["n_crisis"]
+                # total_changes += pair_dct["n_crisis"] / pair_dct["n_baseline"] - 1.0
+            # change = total_crisis / total_baseline - 1.0
+            res_baseline[start_province] = total_baseline
+            res_crisis[start_province] = total_crisis
+            # res[start_province] = total_changes / len(start_dct)
+        return res_baseline, res_crisis
+
 def convert():
     # the general helper class
     info = Information()
@@ -96,10 +138,72 @@ def convert():
 
     print("Missing %d points" % n_missing_points)
 
+def get_changes(outprovince=True, inprovince=True):
+    info = Information()
+
+    dates = []
+    all_baselines = {}
+    all_crises = {}
+    for i,tnow in enumerate(info.datetime_iter()):
+        fprovince = info.get_fsave(tnow)
+        if not os.path.exists(fprovince):
+            continue
+
+        # load the dictionary from the pickled files
+        with open(fprovince, "rb") as fb:
+            province_movements_obj = ProvinceMovement(pickle.load(fb))
+
+        # get the outgoing changes
+        # {"start_province": changes}
+        outgoing_baseline, outgoing_crisis = \
+            province_movements_obj.get_outgoing_province_changes(outprovince, inprovince)
+        for province in outgoing_crisis:
+            if i == 0:
+                all_baselines[province] = [outgoing_baseline[province]]
+                all_crises[province] = [outgoing_crisis[province]]
+            else:
+                all_baselines[province].append(outgoing_baseline[province])
+                all_crises[province].append(outgoing_crisis[province])
+        dates.append(tnow)
+
+    return dates, all_baselines, all_crises
+
 def main():
+    key = "Jakarta Raya"
+    name = "DKI Jakarta"
+    outprovince = False
+    inprovince = True
+
+    # set the title
+    if outprovince and not inprovince:
+        travel_type = "antar-provinsi dari"
+    elif not outprovince and inprovince:
+        travel_type = "antar-kecamatan dalam"
+    title = "Perubahan jumlah perjalanan %s %s" % (travel_type, name)
+
     # convert the unconverted files
     convert()
+    dates, all_baselines, all_crises = get_changes(outprovince, inprovince)
+    ntime_day = 3
 
+    n_baseline = np.asarray(all_baselines[key])
+    n_crisis = np.asarray(all_crises[key])
+
+    n_baseline = n_baseline.reshape(-1, ntime_day).sum(axis=-1)
+    n_crisis = n_crisis.reshape(-1, ntime_day).sum(axis=-1)
+    changes = n_crisis / n_baseline - 1.0
+    dates = dates[::ntime_day]
+
+    x = range(len(changes))
+    plt.plot(x, changes*100, '.-')
+    day_interval = 5
+    yticks, _ = plt.yticks()
+    plt.yticks(yticks, [("%s%s" % (str(y), "%")) for y in yticks])
+    plt.xticks(x[::day_interval],
+        [datetime.datetime.strftime(date, "%d/%m/%y") for date in dates[::day_interval]])
+    plt.xlabel("Tanggal")
+    plt.title(title)
+    plt.show()
 
 if __name__ == "__main__":
-    convert()
+    main()
