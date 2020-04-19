@@ -17,7 +17,9 @@ setup(
         "matplotlib>=1.5.3",
         "torch>=1.3",
         "pyro-ppl>=1.3.0",
-        "Jinja2>=1.1.0"
+        "Jinja2>=1.1.0",
+        "geopandas>=0.7.0",
+        "tqdm>=4.43.0"
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
