@@ -28,15 +28,32 @@ def add_key(dct, value, *keys):
     else:
         present_dct[key] += value
 
+class Information(object):
+    def __init__(self):
+        self.fmap = "data/geojson/indonesia.geojson"
+        self.fmovements_format = "data/fb/movements/movement_%Y-%m-%d_%H%M.csv"
+        self.fsave_format = "data/fb/movements/movement_%Y-%m-%d_%H%M.pkl"
+        self.tstart = datetime.datetime.strptime("2020-03-31 00:00", "%Y-%m-%d %H:%M")
+        self.tend = datetime.datetime.strptime("2020-05-01 00:00", "%Y-%m-%d %H:%M")
+        self.tdelta = datetime.timedelta(hours=8)
+        self.country = "ID"
+
+    def get_fsave(self, tnow):
+        fsave = datetime.datetime.strftime(tnow, self.fsave_format)
+        return fsave
+
+    def get_fmovement(self, tnow):
+        fname = datetime.datetime.strftime(tnow, self.fmovements_format)
+        return fname
+
 def convert():
     # specify the files
-    fmap = "data/geojson/indonesia.geojson"
-    fmovements_format = "data/fb/movements/movement_%Y-%m-%d_%H%M.csv"
-    fsave_format = "data/fb/movements/movement_%Y-%m-%d_%H%M.pkl"
-    tstart = datetime.datetime.strptime("2020-03-31 00:00", "%Y-%m-%d %H:%M")
-    tend = datetime.datetime.strptime("2020-05-01 00:00", "%Y-%m-%d %H:%M")
-    tdelta = datetime.timedelta(hours=8)
-    country = "ID"
+    info = Information()
+    fmap = info.fmap
+    tstart = info.tstart
+    tend = info.tend
+    tdelta = info.tdelta
+    country = info.country
 
     # load the geometry of the map
     map_geom = gp.read_file(fmap)
@@ -45,8 +62,8 @@ def convert():
     n_missing_points = 0
     while tnow < tend:
         # load the file
-        fname = datetime.datetime.strftime(tnow, fmovements_format)
-        fsave = datetime.datetime.strftime(tnow, fsave_format)
+        fname = info.get_fmovement(tnow)
+        fsave = info.get_fsave(tnow)
         if not os.path.exists(fname) or os.path.exists(fsave):
             tnow = tnow + tdelta
             continue
