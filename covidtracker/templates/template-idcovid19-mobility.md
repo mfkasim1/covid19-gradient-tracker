@@ -10,7 +10,10 @@ Diperbarui pada: {{ date }}<br/>
 {% for place in places %}
 #### {{ place['name'] }}
 
-Rata-rata 10 hari terakhir: {{ place['mean_10_days'] }}%
+Rata-rata 10 hari terakhir: \\(\left({{ place['mean_10_days'] }}\pm {{ place['std_10_days'] }}\right)\%\\)
+{% if psbb in place %}
+
+{% endif %}
 
 <img title="{{ place['name'] }}" src="{{ '{{' }} site.baseurl {{ '}}' }}/assets/idcovid19-mobility/{{ place['fname'] }}" width="50%"/>
 {% endfor %}

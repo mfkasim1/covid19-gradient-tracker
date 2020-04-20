@@ -253,10 +253,12 @@ def main(skip_intra=False, fdirsave=None, provinces=None, file_path=None):
         plt.close()
 
         # get the information for the template
+        changes_10_days = changes[-10:] * 100
         places.append({
             "name": name,
             "fname": fname,
-            "mean_10_days": ("%.1f" % (np.mean(changes[-10:])*100)),
+            "mean_10_days": ("%.1f" % (np.mean(changes_10_days))),
+            "std_10_days": ("%.1f" % (np.std(changes_10_days))),
         })
 
     today = datetime.date.today()
