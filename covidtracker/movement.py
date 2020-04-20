@@ -254,6 +254,7 @@ def main(skip_intra=False, fdirsave=None, provinces=None, file_path=None):
         places.append({
             "name": name,
             "fname": fname,
+            "mean_10_days": ("%.1f" % (np.mean(changes[-10:])*100)),
         })
 
     today = datetime.date.today()
@@ -268,5 +269,10 @@ if __name__ == "__main__":
     fpath = os.path.join(fdir, "idcovid19-mobility.md")
     main(skip_intra=True,
          fdirsave=fdirimgs,
-         provinces=["Jakarta Raya", "Jawa Barat", "Jawa Timur", "Sulawesi Selatan"],
+         provinces=["Jakarta Raya",
+                    "Jawa Barat",
+                    "Jawa Timur",
+                    "Sulawesi Selatan",
+                    "Jawa Tengah",
+                    ],
          file_path=fpath)
