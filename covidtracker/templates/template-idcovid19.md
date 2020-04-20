@@ -1,6 +1,6 @@
 ---
 layout: page
-short_title: IDCOVID-19 (Curve)
+short_title:
 title:
 permalink: /idcovid19/
 ---
