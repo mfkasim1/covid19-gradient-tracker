@@ -28,15 +28,6 @@ class ProvinceFinder(object):
         self.to_province_map[point_id] = res
         return res
 
-def find_province(map_geom, point):
-    for i in range(len(map_geom)):
-        geom = map_geom.geometry[i]
-        if not geom.is_valid:
-            geom = geom.convex_hull
-        if geom.contains(point):
-            return map_geom.iloc[i].state
-    return None
-
 def add_key(dct, value, *keys):
     present_dct = dct
     for key in keys[:-1]:
@@ -193,42 +184,63 @@ def get_changes(outprovince=True, inprovince=True):
 
     return dates, all_baselines, all_crises
 
-def main(skip_intra=False):
-    key = "Jawa Timur"
-    name = key#"DKI Jakarta"
+def main(skip_intra=False, fdirsave=None, provinces=None):
     outprovince = True
     inprovince = False
 
-    # set the title
-    if outprovince and not inprovince:
-        travel_type = "antar-provinsi dari"
-    elif not outprovince and inprovince:
-        travel_type = "antar-kecamatan dalam"
-    title = "Perubahan jumlah perjalanan %s %s" % (travel_type, name)
+    # set the default images directory
+    if fdirsave is None:
+        fdirsave = "images/"
 
     # convert the unconverted files
     convert(skip_intra=skip_intra)
     dates, all_baselines, all_crises = get_changes(outprovince, inprovince)
     ntime_day = 3
 
-    n_baseline = np.asarray(all_baselines[key])
-    n_crisis = np.asarray(all_crises[key])
+    if provinces is None:
+        provinces = all_baselines.keys()
+    for key in provinces:
+    # key = "Jawa Timur"
+        name = key if key != "Jakarta Raya" else "DKI Jakarta"
+        print(name)
 
-    n_baseline = n_baseline.reshape(-1, ntime_day).sum(axis=-1)
-    n_crisis = n_crisis.reshape(-1, ntime_day).sum(axis=-1)
-    changes = n_crisis / n_baseline - 1.0
-    dates = dates[::ntime_day]
+        # set the title and the filename to save
+        if outprovince and not inprovince:
+            travel_type = "antar-provinsi dari"
+        elif not outprovince and inprovince:
+            travel_type = "antar-kecamatan dalam"
+        title = "Perubahan jumlah perjalanan %s %s" % (travel_type, name)
+        fname = "%s_%s.png" % (travel_type, name.lower())
+        fname = fname.replace(" ", "_")
 
-    x = range(len(changes))
-    plt.plot(x, changes*100, '.-')
-    day_interval = 5
-    yticks, _ = plt.yticks()
-    plt.yticks(yticks, [("%s%s" % (str(y), "%")) for y in yticks])
-    plt.xticks(x[::day_interval],
-        [datetime.datetime.strftime(date, "%d/%m/%y") for date in dates[::day_interval]])
-    plt.xlabel("Tanggal")
-    plt.title(title)
-    plt.show()
+        n_baseline = np.asarray(all_baselines[key])
+        n_crisis = np.asarray(all_crises[key])
+
+        n_baseline = n_baseline.reshape(-1, ntime_day).sum(axis=-1)
+        n_crisis = n_crisis.reshape(-1, ntime_day).sum(axis=-1)
+        changes = n_crisis / n_baseline - 1.0
+        dates_day = dates[::ntime_day]
+
+        # plot the data
+        x = range(len(changes))
+        plt.plot(x, changes*100, '.-')
+        plt.plot(x, changes*0, 'C0--')
+        plt.fill_between(x, changes*0, changes*100, color="C0", alpha=0.3)
+        day_interval = 5
+        xticklabel = [datetime.datetime.strftime(date, "%d/%m/%y") for date in dates_day[::day_interval]]
+        plt.ylim([-100, 50])
+
+        # set the ticklabels
+        yticks, _ = plt.yticks()
+        plt.yticks(yticks, [("%s%s" % (str(y), "%")) for y in yticks])
+        plt.xticks(x[::day_interval], xticklabel)
+        plt.xlabel("Tanggal")
+        plt.title(title)
+        plt.savefig(os.path.join(fdirsave, fname))
+        plt.close()
+        # plt.show()
 
 if __name__ == "__main__":
-    main(skip_intra=True)
+    main(skip_intra=True,
+         fdirsave="/mnt/c/Users/firma/Documents/Projects/Git/mfkasim91.github.io/assets/idcovid19-mobility/",
+         provinces=["Jakarta Raya", "Jawa Barat", "Jawa Timur", "Sulawesi Selatan"])
