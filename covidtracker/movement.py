@@ -156,14 +156,14 @@ def convert(skip_intra=False):
 
     print("Missing %d points" % n_missing_points)
 
-def get_changes(outprovince=True, inprovince=True):
+def get_changes(outprovince=True, inprovince=True, skip_intra=False):
     info = Information()
 
     dates = []
     all_baselines = {}
     all_crises = {}
     for i,tnow in enumerate(info.datetime_iter()):
-        fprovince = info.get_fsave(tnow)
+        fprovince = info.get_fsave(tnow, skip_intra=skip_intra)
         if not os.path.exists(fprovince):
             continue
 
@@ -201,11 +201,12 @@ def main(skip_intra=False, fdirsave=None, provinces=None, file_path=None):
 
     # convert the unconverted files
     convert(skip_intra=skip_intra)
-    dates, all_baselines, all_crises = get_changes(outprovince, inprovince)
+    dates, all_baselines, all_crises = get_changes(outprovince, inprovince, skip_intra)
     ntime_day = 3
 
     if provinces is None:
         provinces = all_baselines.keys()
+    print(all_baselines.keys())
 
     places = []
     for key in provinces:
@@ -274,5 +275,10 @@ if __name__ == "__main__":
                     "Jawa Timur",
                     "Sulawesi Selatan",
                     "Jawa Tengah",
+                    # "Banten",
+                    # "Bali",
+                    # "Papua",
+                    # "Kalimantan Selatan",
+                    # "Sumatera Selatan"
                     ],
          file_path=fpath)
