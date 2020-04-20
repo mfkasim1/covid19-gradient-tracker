@@ -6,7 +6,9 @@ import pandas as pd
 import numpy as np
 from shapely.geometry import Point
 from tqdm import tqdm
+from jinja2 import Template
 import matplotlib.pyplot as plt
+import covidtracker as ct
 
 class ProvinceFinder(object):
     def __init__(self):
@@ -184,13 +186,18 @@ def get_changes(outprovince=True, inprovince=True):
 
     return dates, all_baselines, all_crises
 
-def main(skip_intra=False, fdirsave=None, provinces=None):
+def main(skip_intra=False, fdirsave=None, provinces=None, file_path=None):
     outprovince = True
     inprovince = False
 
     # set the default images directory
     if fdirsave is None:
         fdirsave = "images/"
+
+    # open the template
+    ftemplate = os.path.join(os.path.split(ct.__file__)[0], "templates", "template-idcovid19-mobility.md")
+    with open(ftemplate, "r") as f:
+        template = Template(f.read())
 
     # convert the unconverted files
     convert(skip_intra=skip_intra)
@@ -199,6 +206,8 @@ def main(skip_intra=False, fdirsave=None, provinces=None):
 
     if provinces is None:
         provinces = all_baselines.keys()
+
+    places = []
     for key in provinces:
     # key = "Jawa Timur"
         name = key if key != "Jakarta Raya" else "DKI Jakarta"
@@ -231,6 +240,8 @@ def main(skip_intra=False, fdirsave=None, provinces=None):
         plt.ylim([-100, 50])
 
         # set the ticklabels
+        plt.gca().yaxis.set_ticks_position('both')
+        plt.tick_params(axis='y', which='both', labelleft=True, labelright=True)
         yticks, _ = plt.yticks()
         plt.yticks(yticks, [("%s%s" % (str(y), "%")) for y in yticks])
         plt.xticks(x[::day_interval], xticklabel)
@@ -238,9 +249,24 @@ def main(skip_intra=False, fdirsave=None, provinces=None):
         plt.title(title)
         plt.savefig(os.path.join(fdirsave, fname))
         plt.close()
-        # plt.show()
+
+        # get the information for the template
+        places.append({
+            "name": name,
+            "fname": fname,
+        })
+
+    today = datetime.date.today()
+    content = template.render(places=places, date=today.strftime("%d/%m/%Y"))
+    if file_path is not None:
+        with open(file_path, "w") as f:
+            f.write(content)
 
 if __name__ == "__main__":
+    fdir = "/mnt/c/Users/firma/Documents/Projects/Git/mfkasim91.github.io"
+    fdirimgs = os.path.join(fdir, "assets/idcovid19-mobility/")
+    fpath = os.path.join(fdir, "idcovid19-mobility.md")
     main(skip_intra=True,
-         fdirsave="/mnt/c/Users/firma/Documents/Projects/Git/mfkasim91.github.io/assets/idcovid19-mobility/",
-         provinces=["Jakarta Raya", "Jawa Barat", "Jawa Timur", "Sulawesi Selatan"])
+         fdirsave=fdirimgs,
+         provinces=["Jakarta Raya", "Jawa Barat", "Jawa Timur", "Sulawesi Selatan"],
+         file_path=fpath)
