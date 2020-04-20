@@ -236,7 +236,7 @@ def main(skip_intra=False, fdirsave=None, provinces=None, file_path=None):
         plt.plot(x, changes*100, '.-')
         plt.plot(x, changes*0, 'C0--')
         plt.fill_between(x, changes*0, changes*100, color="C0", alpha=0.3)
-        day_interval = 5
+        day_interval = 7
         xticklabel = [datetime.datetime.strftime(date, "%d/%m/%y") for date in dates_day[::day_interval]]
         plt.ylim([-100, 50])
 
@@ -248,6 +248,7 @@ def main(skip_intra=False, fdirsave=None, provinces=None, file_path=None):
         plt.xticks(x[::day_interval], xticklabel)
         plt.xlabel("Tanggal")
         plt.title(title)
+        plt.grid()
         plt.savefig(os.path.join(fdirsave, fname))
         plt.close()
 
