@@ -8,6 +8,26 @@ from shapely.geometry import Point
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
+class ProvinceFinder(object):
+    def __init__(self):
+        self.to_province_map = {}
+
+    def find_province(self, map_geom, point, point_id):
+        if point_id in self.to_province_map:
+            return self.to_province_map[point_id]
+
+        res = None
+        for i in range(len(map_geom)):
+            geom = map_geom.geometry[i]
+            if not geom.is_valid:
+                geom = geom.convex_hull
+            if geom.contains(point):
+                res = map_geom.iloc[i].state
+                break
+
+        self.to_province_map[point_id] = res
+        return res
+
 def find_province(map_geom, point):
     for i in range(len(map_geom)):
         geom = map_geom.geometry[i]
@@ -35,13 +55,15 @@ class Information(object):
         self.fmap = "data/geojson/indonesia.geojson"
         self.fmovements_format = "data/fb/movements/movement_%Y-%m-%d_%H%M.csv"
         self.fsave_format = "data/fb/movements/movement_%Y-%m-%d_%H%M.pkl"
+        self.fsave_format1 = "data/fb/movements/movement_inter_%Y-%m-%d_%H%M.pkl"
         self.tstart = datetime.datetime.strptime("2020-03-31 00:00", "%Y-%m-%d %H:%M")
         self.tend = datetime.datetime.today()
         self.tdelta = datetime.timedelta(hours=8)
         self.country = "ID"
 
-    def get_fsave(self, tnow):
-        fsave = datetime.datetime.strftime(tnow, self.fsave_format)
+    def get_fsave(self, tnow, skip_intra=False):
+        fsave_format = self.fsave_format if not skip_intra else self.fsave_format1
+        fsave = datetime.datetime.strftime(tnow, fsave_format)
         return fsave
 
     def get_fmovement(self, tnow):
@@ -94,9 +116,10 @@ class ProvinceMovement(object):
             # res[start_province] = total_changes / len(start_dct)
         return res_baseline, res_crisis
 
-def convert():
+def convert(skip_intra=False):
     # the general helper class
     info = Information()
+    province_finder = ProvinceFinder()
 
     # load the geometry of the map
     map_geom = gp.read_file(info.fmap)
@@ -104,7 +127,7 @@ def convert():
     n_missing_points = 0
     for tnow in info.datetime_iter():
         fname = info.get_fmovement(tnow)
-        fsave = info.get_fsave(tnow)
+        fsave = info.get_fsave(tnow, skip_intra=skip_intra)
         if not os.path.exists(fname) or os.path.exists(fsave):
             continue
 
@@ -115,20 +138,22 @@ def convert():
             rowdata = movement_geom.iloc[i]
             if rowdata.country != info.country:
                 continue
+            if skip_intra and rowdata.start_polygon_id == rowdata.end_polygon_id:
+                continue
+
             start_point = Point(rowdata.start_lon, rowdata.start_lat)
             end_point = Point(rowdata.end_lon, rowdata.end_lat)
 
             # get the starting and ending provinces
-            start_province = find_province(map_geom, start_point)
+            start_province = province_finder.find_province(map_geom, start_point, rowdata.start_polygon_id)
             if start_province is None:
                 n_missing_points += 1
                 continue
-            end_province = find_province(map_geom, end_point)
+            end_province = province_finder.find_province(map_geom, end_point, rowdata.end_polygon_id)
             if end_province is None:
                 n_missing_points += 1
                 continue
 
-            key = "%s-%s" % (start_province, end_province)
             add_key(provinces_maps, rowdata.n_baseline, start_province, end_province, "n_baseline")
             add_key(provinces_maps, rowdata.n_crisis, start_province, end_province, "n_crisis")
 
@@ -168,11 +193,11 @@ def get_changes(outprovince=True, inprovince=True):
 
     return dates, all_baselines, all_crises
 
-def main():
-    key = "Jakarta Raya"
-    name = "DKI Jakarta"
-    outprovince = False
-    inprovince = True
+def main(skip_intra=False):
+    key = "Jawa Timur"
+    name = key#"DKI Jakarta"
+    outprovince = True
+    inprovince = False
 
     # set the title
     if outprovince and not inprovince:
@@ -182,7 +207,7 @@ def main():
     title = "Perubahan jumlah perjalanan %s %s" % (travel_type, name)
 
     # convert the unconverted files
-    convert()
+    convert(skip_intra=skip_intra)
     dates, all_baselines, all_crises = get_changes(outprovince, inprovince)
     ntime_day = 3
 
@@ -206,4 +231,4 @@ def main():
     plt.show()
 
 if __name__ == "__main__":
-    main()
+    main(skip_intra=True)
