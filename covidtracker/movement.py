@@ -46,8 +46,8 @@ def add_key(dct, value, *keys):
 class Information(object):
     def __init__(self):
         self.fmap = "data/geojson/indonesia.geojson"
-        # self.fdir = "data/fb/movements"
-        self.fdir = "data/fb/movetiles"
+        self.fdir = "data/fb/movements"
+        # self.fdir = "data/fb/movetiles"
         self.fmovements_format = os.path.join(self.fdir, "movement_%Y-%m-%d_%H%M.csv")
         self.fsave_format = os.path.join(self.fdir, "movement_%Y-%m-%d_%H%M.pkl")
         self.fsave_format1 = os.path.join(self.fdir, "movement_inter_%Y-%m-%d_%H%M.pkl")
