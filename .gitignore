@@ -1,5 +1,6 @@
 *.pkl
 covidtracker/data/fb/movements/*.csv
+covidtracker/data/fb/movetiles/*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

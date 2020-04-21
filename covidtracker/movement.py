@@ -46,9 +46,11 @@ def add_key(dct, value, *keys):
 class Information(object):
     def __init__(self):
         self.fmap = "data/geojson/indonesia.geojson"
-        self.fmovements_format = "data/fb/movements/movement_%Y-%m-%d_%H%M.csv"
-        self.fsave_format = "data/fb/movements/movement_%Y-%m-%d_%H%M.pkl"
-        self.fsave_format1 = "data/fb/movements/movement_inter_%Y-%m-%d_%H%M.pkl"
+        # self.fdir = "data/fb/movements"
+        self.fdir = "data/fb/movetiles"
+        self.fmovements_format = os.path.join(self.fdir, "movement_%Y-%m-%d_%H%M.csv")
+        self.fsave_format = os.path.join(self.fdir, "movement_%Y-%m-%d_%H%M.pkl")
+        self.fsave_format1 = os.path.join(self.fdir, "movement_inter_%Y-%m-%d_%H%M.pkl")
         self.tstart = datetime.datetime.strptime("2020-03-31 00:00", "%Y-%m-%d %H:%M")
         self.tend = datetime.datetime.today()
         self.tdelta = datetime.timedelta(hours=8)
