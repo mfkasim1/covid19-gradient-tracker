@@ -13,6 +13,7 @@ Metode dapat dilihat di [sini]({{ '{{' }} site.baseurl {{ '}}' }}/2020/04/17/COV
 {% for place in places %}
 #### {{ place['name'] }}
 
+Probabilitas menurun: \\({{ place['decline_prob'] }}\%\\)<br/>
 Hasil: {{ place['flatcurve_result'] }}
 
 <img title="{{ place['name'] }}" src="{{ '{{' }} site.baseurl {{ '}}' }}/assets/idcovid19-daily/{{ place['dataid'] }}.png" width="100%"/>

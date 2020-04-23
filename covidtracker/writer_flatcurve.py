@@ -199,14 +199,14 @@ def main(img_path, file_path):
         else:
             decline_prob = decline_portion
 
-        if decline_prob > 0.99:
+        if decline_prob > 0.95:
             flatcurve_res = "**turun**"
-        elif decline_prob > 0.95:
-            flatcurve_res = "**kemungkinan** turun"
         elif decline_prob > 0.75:
+            flatcurve_res = "**kemungkinan** turun"
+        elif decline_prob > 0.5:
             flatcurve_res = "ada indikasi penurunan, tapi belum pasti"
-        elif decline_prob < 0.75 and decline_portion > 0.75:
-            flatcurve_res = "kurva terlihat turun, tapi bisa jadi karena jumlah tes yang menurun"
+        elif decline_prob < 0.5 and decline_portion > 0.5:
+            flatcurve_res = "kurva terlihat turun, tapi jumlah tes juga menurun"
         else:
             flatcurve_res = "belum dapat disimpulkan"
 
@@ -218,7 +218,8 @@ def main(img_path, file_path):
         places.append({
             "dataid": df,
             "name": names[i],
-            "flatcurve_result": flatcurve_res
+            "flatcurve_result": flatcurve_res,
+            "decline_prob": decline_prob
         })
 
     with open(ftemplate, "r") as f:
