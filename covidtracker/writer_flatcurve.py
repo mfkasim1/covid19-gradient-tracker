@@ -127,7 +127,7 @@ def plot_weekly_tests_prov(res):
     return ymed, (h(cdf, 0.975)-h(cdf, 0.025))/2.0
 
 def main(img_path, file_path):
-    provinces = ["Jakarta", "Jabar", "Jatim", "Sulsel"]
+    provinces = ["Jakarta", "Jabar", "Jatim", "Jateng", "Sulsel"]
     fields = ["id_new_cases"] + ["idprov_%s_new_cases" % p.lower() for p in provinces]
     names = ["Indonesia"] + provinces
 
