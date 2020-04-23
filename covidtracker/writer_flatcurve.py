@@ -204,7 +204,7 @@ def main(img_path, file_path):
         elif decline_prob > 0.75:
             flatcurve_res = "**kemungkinan** turun"
         elif decline_prob > 0.5:
-            flatcurve_res = "ada indikasi penurunan, tapi belum pasti"
+            flatcurve_res = "ada indikasi penurunan, tapi belum dapat dipastikan"
         elif decline_prob < 0.5 and decline_portion > 0.5:
             flatcurve_res = "kurva terlihat turun, tapi jumlah tes juga menurun"
         else:
@@ -219,7 +219,7 @@ def main(img_path, file_path):
             "dataid": df,
             "name": names[i],
             "flatcurve_result": flatcurve_res,
-            "decline_prob": decline_prob
+            "decline_prob": int(np.round(decline_prob * 100))
         })
 
     with open(ftemplate, "r") as f:
