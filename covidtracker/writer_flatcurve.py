@@ -174,10 +174,11 @@ def main(img_path, file_path):
         elif df.startswith("idprov_") and df.endswith("_new_cases"):
             plt.subplot(1,ncols,3)
             test_weekly, test_weekly_2std = plot_weekly_tests_prov(res)
-            test_ratio = test_weekly[-1] / test_weekly[-2]
-            test_ratio_2std = ((test_weekly_2std[-1] / test_weekly[-1])**2 +\
-                               (test_weekly_2std[-2] / test_weekly[-2])**2)**.5 *\
-                                test_ratio
+            # NOTE: comment the code below to use the ratio from the national figures
+            # test_ratio = test_weekly[-1] / test_weekly[-2]
+            # test_ratio_2std = ((test_weekly_2std[-1] / test_weekly[-1])**2 +\
+            #                    (test_weekly_2std[-2] / test_weekly[-2])**2)**.5 *\
+            #                     test_ratio
 
         plt.tight_layout()
         plt.savefig(os.path.join(img_path, "%s.png"%df))
