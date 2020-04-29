@@ -231,7 +231,8 @@ def main(img_path, file_path):
         f.write(content)
 
 if __name__ == "__main__":
-    fpath = "/mnt/c/Users/firma/Documents/Projects/Git/mfkasim91.github.io"
+    # fpath = "/mnt/c/Users/firma/Documents/Projects/Git/mfkasim91.github.io"
+    fpath = "../../mfkasim91.github.io"
     img_path = os.path.join(fpath, "assets", "idcovid19-daily")
     file_path = os.path.join(fpath, "idcovid19.md")
     main(img_path, file_path)
