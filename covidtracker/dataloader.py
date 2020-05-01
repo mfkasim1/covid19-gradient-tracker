@@ -32,6 +32,12 @@ class DataLoader(object):
                 "retrieve_fcn": lambda pddata: pddata.meninggal_baru,
                 "ylabel": "Kasus kematian baru per hari",
             },
+            "id_cum_deaths": {
+                "file": "data/indonesia.csv",
+                "xticks": lambda pddata: pddata.tanggal,
+                "retrieve_fcn": lambda pddata: pddata.meninggal_kum,
+                "ylabel": "Total kasus kematian",
+            },
             "id_new_tests": {
                 "file": "data/indonesia.csv",
                 "xticks": lambda pddata: pddata.tanggal,

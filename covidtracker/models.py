@@ -8,6 +8,7 @@ from pyro.distributions import Normal, Uniform, Laplace, MultivariateNormal
 from pyro.infer import MCMC, NUTS
 import pyro.poutine as poutine
 import matplotlib.pyplot as plt
+from scipy.stats import gamma
 from covidtracker.dataloader import DataLoader
 from covidtracker.plotter import plot_interval
 
@@ -81,6 +82,26 @@ class Model1(BaseModel):
         mu = a.unsqueeze(-1) + int_bdt
         yt = torch.exp(mu)
         return yt # (nsamples, n)
+
+    def predict_total_deaths(self, samples, ifr=0.01):
+        # use the distribution from report 13 MRC with 10 days of delay:
+        # 5 days as the incubation period + 5 days for the detection
+        cases = self.simulate_samples(samples).detach().numpy() # (nsamples, nt)
+
+        # get the inverse cumulative sum of the cases
+        cumcases = np.sum(cases, axis=-1)[:,None] - np.cumsum(cases[:,::-1], axis=-1) # (nsamples, nt)
+
+        # get the distribution
+        delay = 10
+        nt = cumcases.shape[-1]
+        days = np.arange(nt+delay) * 1.0
+        a1 = (1./0.45)**2 + (1./0.86)**2
+        scale1 = 23.9/a1
+        dist = gamma.pdf(days, a1, scale=scale1) [delay:] # (nt)
+        dist = dist / np.sum(dist)
+
+        ndeaths = np.sum(cumcases * dist, axis=-1) * ifr # (nsamples,)
+        return ndeaths
 
 def conditioned_model(model, t, yt):
     # model must be a BaseModel

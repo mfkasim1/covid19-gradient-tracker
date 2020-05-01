@@ -15,6 +15,7 @@ Metode dapat dilihat di [sini]({{ '{{' }} site.baseurl {{ '}}' }}/2020/04/17/COV
 
 Probabilitas menurun: \\({{ place['decline_prob'] }}\%\\)<br/>
 Hasil: {{ place['flatcurve_result'] }}
-
+{% if place['total_cases_median'] != "" %}Estimasi jumlah kasus: {{ place['total_cases_median'] }} (95% CI: {{ place['total_cases_025'] }} - {{ place['total_cases_975'] }})
+{% endif %}
 <img title="{{ place['name'] }}" src="{{ '{{' }} site.baseurl {{ '}}' }}/assets/idcovid19-daily/{{ place['dataid'] }}.png" width="100%"/>
 {% endfor %}

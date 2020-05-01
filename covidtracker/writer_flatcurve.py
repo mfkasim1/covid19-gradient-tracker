@@ -43,6 +43,41 @@ def get_in_week(t, a=7, i=0):
     ty = t[t.shape[-1]%7:].reshape(-1,a)[:,i]
     return ty
 
+def get_total_cases(res, total_deaths_data):
+    model = res.model
+    samples = res.samples
+    ysim = res.ysim
+
+    total_deaths_from_cases_fullifr = model.predict_total_deaths(samples, ifr=1.0) # (nsamples,)
+    unreported_ratio_fullifr = total_deaths_data / total_deaths_from_cases_fullifr
+    total_cases_fullifr = unreported_ratio_fullifr * np.sum(ysim, axis=-1)
+
+    total_cases = None
+    ntrial = 100
+    ifrs = np.random.randn(ntrial) * 0.0025 + 0.01 # (0.5 - 1.5)%
+    ifrs[ifrs < 0.005] = 0.005
+    for i,ifr in enumerate(ifrs):
+        total_cases1 = total_cases_fullifr / ifr # (nsamples,)
+        if i == 0:
+            total_cases = total_cases1
+        else:
+            total_cases = np.concatenate((total_cases, total_cases1))
+
+    # get the statistics of the total cases
+    total_cases_median = int(np.round(np.median(total_cases)))
+    total_cases_025    = int(np.round(np.percentile(total_cases, 2.5)))
+    total_cases_975    = int(np.round(np.percentile(total_cases, 97.5)))
+
+    def formatstr(a):
+        b = int(float("%.2g"%a)) # round to some significant figures
+        c = f"{b:,}"
+        d = c.replace(",", ".")
+        return d
+
+    return formatstr(total_cases_median),\
+           formatstr(total_cases_025),\
+           formatstr(total_cases_975)
+
 def plot_weekly_tests(res):
     yobs = res.yobs
 
@@ -149,6 +184,7 @@ def main(img_path, file_path):
         model = res.model
         samples = res.samples
         ysim = res.ysim
+        res.yobs = res.yobs[:ysim.shape[1]]
         yobs = res.yobs
 
         ################## creating the figures ##################
@@ -164,6 +200,9 @@ def main(img_path, file_path):
         plt.subplot(1,ncols,2)
         plot_data_and_sim(res)
 
+        total_cases_median = ""
+        total_cases_025 = ""
+        total_cases_975 = ""
         if df == "id_new_cases":
             # show the tests
             plt.subplot(1,ncols,3)
@@ -171,6 +210,11 @@ def main(img_path, file_path):
             # calculate the ratio for the last week
             test_ratio = test_weekly[-1] / test_weekly[-2]
             test_ratio_2std = 1e-8 # very small std
+
+            # calculate the estimated infection cases
+            total_deaths_data = DataLoader("id_cum_deaths").ytime[-1]
+            total_cases_median, total_cases_025, total_cases_975 = get_total_cases(res, total_deaths_data)
+
         elif df.startswith("idprov_") and df.endswith("_new_cases"):
             plt.subplot(1,ncols,3)
             test_weekly, test_weekly_2std = plot_weekly_tests_prov(res)
@@ -220,7 +264,12 @@ def main(img_path, file_path):
             "dataid": df,
             "name": names[i],
             "flatcurve_result": flatcurve_res,
-            "decline_prob": int(np.round(decline_prob * 100))
+            "decline_prob": int(np.round(decline_prob * 100)),
+
+            # predicted cases
+            "total_cases_median": total_cases_median,
+            "total_cases_025": total_cases_025,
+            "total_cases_975": total_cases_975,
         })
 
     with open(ftemplate, "r") as f:
