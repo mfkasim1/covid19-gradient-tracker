@@ -224,6 +224,10 @@ def main(img_path, file_path):
             #                    (test_weekly_2std[-2] / test_weekly[-2])**2)**.5 *\
             #                     test_ratio
 
+            # calculate the estimated infection cases
+            total_deaths_data = DataLoader(df.replace("_new_cases", "_cum_deaths")).ytime[-1]
+            total_cases_median, total_cases_025, total_cases_975 = get_total_cases(res, total_deaths_data)
+
         plt.tight_layout()
         plt.savefig(os.path.join(img_path, "%s.png"%df))
         plt.close()

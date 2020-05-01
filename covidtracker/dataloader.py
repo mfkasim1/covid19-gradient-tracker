@@ -59,11 +59,18 @@ class DataLoader(object):
                 return pddata[province]
             return retr_fcn
         for province in provinces:
-            self.all_addresses["idprov_%s_new_cases" % province.lower()] = {
+            provcode = province.lower()
+            self.all_addresses["idprov_%s_new_cases" % provcode] = {
                 "file": "data/provinsi.csv",
                 "xticks": lambda pddata: pddata.tanggal,
                 "retrieve_fcn": get_retr_fcn(province),
                 "ylabel": "Kasus positif per hari (%s)" % province
+            }
+            self.all_addresses["idprov_%s_cum_deaths" % provcode] = {
+                "file": "data/provinsi-cumdeaths.csv",
+                "xticks": lambda pddata: pddata.tanggal,
+                "retrieve_fcn": get_retr_fcn(province),
+                "ylabel": "Total jumlah kematian (%s)" % province
             }
 
         self.address = self.all_addresses[dataidentifier]
