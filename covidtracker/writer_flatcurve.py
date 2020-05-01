@@ -161,10 +161,15 @@ def plot_weekly_tests_prov(res):
     plt.title("Perkiraan jumlah pemeriksaan mingguan")
     return ymed, (h(cdf, 0.975)-h(cdf, 0.025))/2.0
 
-def main(img_path, file_path):
+def main(img_path, file_path, idx=None):
     provinces = ["Jakarta", "Jabar", "Jatim", "Jateng", "Sulsel"]
     fields = ["id_new_cases"] + ["idprov_%s_new_cases" % p.lower() for p in provinces]
     names = ["Indonesia"] + provinces
+
+    if idx is not None:
+        provinces = provinces[idx:idx+1]
+        fields = fields[idx:idx+1]
+        names = names[idx:idx+1]
 
     ftemplate = os.path.join(os.path.split(ct.__file__)[0], "templates", "template-idcovid19.md")
 
@@ -179,6 +184,9 @@ def main(img_path, file_path):
         # get the samples or resample
         res = update_samples(df, nsamples=nsamples, nchains=nchains, nwarmups=nwarmups,
             jit=True, restart=False)
+
+        if idx is not None:
+            return
 
         dl = res.dataloader
         model = res.model
@@ -284,8 +292,12 @@ def main(img_path, file_path):
         f.write(content)
 
 if __name__ == "__main__":
-    # fpath = "/mnt/c/Users/firma/Documents/Projects/Git/mfkasim91.github.io"
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--idx", type=int, default=None)
+    args = parser.parse_args()
+
     fpath = "../../mfkasim91.github.io"
     img_path = os.path.join(fpath, "assets", "idcovid19-daily")
     file_path = os.path.join(fpath, "idcovid19.md")
-    main(img_path, file_path)
+    main(img_path, file_path, idx=args.idx)
