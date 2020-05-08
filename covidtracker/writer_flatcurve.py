@@ -49,8 +49,8 @@ def get_total_cases(res, total_deaths_data):
     ysim = res.ysim
 
     unreported_ratio_death = 2200 / 785. # from reuter's report https://uk.reuters.com/article/us-health-coronavirus-indonesia-casualti/exclusive-more-than-2200-indonesians-have-died-with-coronavirus-symptoms-data-shows-idUKKCN22A04N
-    total_deaths_from_cases_fullifr = model.predict_total_deaths(samples, ifr=1.0) * unreported_ratio_death # (nsamples,)
-    unreported_ratio_fullifr = total_deaths_data / total_deaths_from_cases_fullifr
+    total_deaths_from_cases_fullifr = model.predict_total_deaths(samples, ifr=1.0) # (nsamples,)
+    unreported_ratio_fullifr = total_deaths_data * unreported_ratio_death / total_deaths_from_cases_fullifr
     total_cases_fullifr = unreported_ratio_fullifr * np.sum(ysim, axis=-1)
 
     total_cases = None
