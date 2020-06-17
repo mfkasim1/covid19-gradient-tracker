@@ -1,4 +1,5 @@
 *.pkl
+*.xlsx
 covidtracker/data/fb/movements/*.csv
 covidtracker/data/fb/movetiles/*.csv
 
